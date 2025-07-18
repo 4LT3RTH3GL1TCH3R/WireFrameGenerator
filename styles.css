@@ -2,10 +2,10 @@
 * {
   box-sizing: border-box;
   user-select: none;
-}
-body, html {
   margin: 0;
   padding: 0;
+}
+body, html {
   height: 100vh;
   width: 100vw;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -25,10 +25,13 @@ body, html {
   flex-direction: column;
   overflow-y: auto;
   font-size: 14px;
-  transition: transform 0.3s ease;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
   transform: translateX(0);
-  position: relative;
-  z-index: 10;
+  transition: transform 0.3s ease;
+  z-index: 15;
 }
 #sidebar.hidden {
   transform: translateX(-100%);
@@ -36,13 +39,13 @@ body, html {
 }
 
 #sidebar h2 {
-  margin: 0 0 20px 0;
+  margin-bottom: 20px;
   font-weight: 700;
   color: #1de9b6;
   user-select: none;
 }
 
-/* Same label, inputs, buttons styling as before */
+/* LABELS & INPUTS */
 label {
   display: flex;
   justify-content: space-between;
@@ -50,9 +53,11 @@ label {
   margin-bottom: 6px;
   font-weight: 600;
   user-select: none;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 input[type="range"] {
-  width: 100%;
+  flex-grow: 1;
   cursor: pointer;
   -webkit-appearance: none;
   height: 8px;
@@ -61,6 +66,7 @@ input[type="range"] {
   margin-bottom: 16px;
   outline: none;
   transition: background 0.2s ease;
+  min-width: 120px;
 }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -81,7 +87,6 @@ input[type="range"]:hover::-webkit-slider-thumb {
 }
 input[type="number"] {
   width: 70px;
-  margin-left: 10px;
   padding: 4px 6px;
   border-radius: 4px;
   border: 1px solid #333;
@@ -109,6 +114,8 @@ button {
   box-shadow: 0 0 12px #1de9b6aa;
   transition: background 0.3s ease, box-shadow 0.3s ease;
   user-select: none;
+  width: 100%;
+  text-align: center;
 }
 button:hover {
   background: #13c69d;
@@ -127,15 +134,21 @@ button:disabled {
   border-radius: 6px;
   background: #111;
   padding: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 #shapes-list button {
   background: #333;
   color: #eee;
   font-weight: 600;
   padding: 6px 8px;
-  margin: 3px 3px 3px 0;
   border-radius: 4px;
   box-shadow: none;
+  cursor: pointer;
+  flex-grow: 1;
+  flex-basis: calc(50% - 6px);
+  text-align: center;
 }
 #shapes-list button.selected {
   background: #1de9b6;
@@ -166,24 +179,19 @@ button:disabled {
   box-shadow: 0 0 8px #1de9b6aa;
 }
 
-/* Scrollbar for sidebar */
-#sidebar::-webkit-scrollbar {
-  width: 8px;
-}
-#sidebar::-webkit-scrollbar-track {
-  background: #121212;
-}
-#sidebar::-webkit-scrollbar-thumb {
-  background: #1de9b6;
-  border-radius: 4px;
-}
-
 /* === CANVAS CONTAINER === */
 #canvas-container {
   flex-grow: 1;
+  margin-left: 340px;
+  height: 100vh;
   position: relative;
   background-color: #121212;
   overflow: hidden;
+}
+
+/* When sidebar hidden, canvas takes full width */
+#sidebar.hidden + #canvas-container {
+  margin-left: 0;
 }
 
 /* Canvas fills container */
@@ -205,5 +213,5 @@ canvas {
   background: rgba(0,0,0,0.3);
   padding: 4px 8px;
   border-radius: 6px;
-  z-index: 15;
+  z-index: 20;
 }
