@@ -6,28 +6,16 @@
 body, html {
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #121212;
   color: #ddd;
   display: flex;
-  height: 100vh;
-  width: 100vw;
+  overflow: hidden;
 }
 
-/* === CANVAS === */
-#canvas-container {
-  flex-grow: 1;
-  position: relative;
-}
-canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background-color: transparent;
-}
-
-/* === SIDEBAR UI === */
+/* === SIDEBAR === */
 #sidebar {
   width: 340px;
   background: #1e1e1e;
@@ -37,13 +25,24 @@ canvas {
   flex-direction: column;
   overflow-y: auto;
   font-size: 14px;
+  transition: transform 0.3s ease;
+  transform: translateX(0);
+  position: relative;
+  z-index: 10;
 }
+#sidebar.hidden {
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+
 #sidebar h2 {
   margin: 0 0 20px 0;
   font-weight: 700;
   color: #1de9b6;
   user-select: none;
 }
+
+/* Same label, inputs, buttons styling as before */
 label {
   display: flex;
   justify-content: space-between;
@@ -167,7 +166,7 @@ button:disabled {
   box-shadow: 0 0 8px #1de9b6aa;
 }
 
-/* Scrollbar */
+/* Scrollbar for sidebar */
 #sidebar::-webkit-scrollbar {
   width: 8px;
 }
@@ -179,7 +178,23 @@ button:disabled {
   border-radius: 4px;
 }
 
-/* INFO text bottom-left */
+/* === CANVAS CONTAINER === */
+#canvas-container {
+  flex-grow: 1;
+  position: relative;
+  background-color: #121212;
+  overflow: hidden;
+}
+
+/* Canvas fills container */
+canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  background-color: transparent;
+}
+
+/* === INFO TEXT === */
 #info {
   position: fixed;
   bottom: 10px; left: 10px;
@@ -190,15 +205,5 @@ button:disabled {
   background: rgba(0,0,0,0.3);
   padding: 4px 8px;
   border-radius: 6px;
-}
-
-/* Responsive on very small screens */
-@media (max-width: 400px) {
-  #sidebar {
-    width: 100vw;
-    height: 320px;
-    position: absolute;
-    bottom: 0;
-    box-shadow: none;
-  }
+  z-index: 15;
 }
