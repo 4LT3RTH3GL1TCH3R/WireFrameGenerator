@@ -7,27 +7,27 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <aside id="sidebar" aria-label="Settings menu">
+  <aside id="sidebar" aria-label="Settings menu" class="visible">
     <h2>Wireframe Settings</h2>
 
     <label for="pointsSize">Points Size
-      <input type="range" id="pointsSize" min="0" max="10" step="1" value="3" />
-      <input type="number" id="pointsSizeNum" min="0" max="10" step="1" value="3" />
+      <input type="range" id="pointsSize" min="0" max="10" step="0.5" value="3" />
+      <input type="number" id="pointsSizeNum" min="0" max="10" step="0.5" value="3" />
     </label>
 
     <label for="lineWidth">Line Width
-      <input type="range" id="lineWidth" min="1" max="10" step="1" value="1" />
-      <input type="number" id="lineWidthNum" min="1" max="10" step="1" value="1" />
+      <input type="range" id="lineWidth" min="1" max="10" step="0.5" value="1" />
+      <input type="number" id="lineWidthNum" min="1" max="10" step="0.5" value="1" />
     </label>
 
     <label for="ugliness">Ugliness (vertex noise)
-      <input type="range" id="ugliness" min="0" max="0.5" step="0.01" value="0" />
-      <input type="number" id="uglinessNum" min="0" max="0.5" step="0.01" value="0" />
+      <input type="range" id="ugliness" min="0" max="0.7" step="0.01" value="0" />
+      <input type="number" id="uglinessNum" min="0" max="0.7" step="0.01" value="0" />
     </label>
 
     <label for="modelSize">Model Size (scale)
-      <input type="range" id="modelSize" min="0.5" max="3" step="0.1" value="1" />
-      <input type="number" id="modelSizeNum" min="0.5" max="3" step="0.1" value="1" />
+      <input type="range" id="modelSize" min="0.3" max="4" step="0.1" value="1" />
+      <input type="number" id="modelSizeNum" min="0.3" max="4" step="0.1" value="1" />
     </label>
 
     <label for="vertexCount">Vertex Count (% detail)
@@ -36,8 +36,23 @@
     </label>
 
     <label for="rotationSpeed">Rotation Speed
-      <input type="range" id="rotationSpeed" min="0" max="0.1" step="0.001" value="0.02" />
-      <input type="number" id="rotationSpeedNum" min="0" max="0.1" step="0.001" value="0.02" />
+      <input type="range" id="rotationSpeed" min="0" max="0.12" step="0.001" value="0.025" />
+      <input type="number" id="rotationSpeedNum" min="0" max="0.12" step="0.001" value="0.025" />
+    </label>
+
+    <label for="rotationAxisX">Rotation Axis X
+      <input type="range" id="rotationAxisX" min="-1" max="1" step="0.01" value="0.5" />
+      <input type="number" id="rotationAxisXNum" min="-1" max="1" step="0.01" value="0.5" />
+    </label>
+
+    <label for="rotationAxisY">Rotation Axis Y
+      <input type="range" id="rotationAxisY" min="-1" max="1" step="0.01" value="0.5" />
+      <input type="number" id="rotationAxisYNum" min="-1" max="1" step="0.01" value="0.5" />
+    </label>
+
+    <label for="rotationAxisZ">Rotation Axis Z
+      <input type="range" id="rotationAxisZ" min="-1" max="1" step="0.01" value="0.5" />
+      <input type="number" id="rotationAxisZNum" min="-1" max="1" step="0.01" value="0.5" />
     </label>
 
     <label>
@@ -60,7 +75,6 @@
     <button id="refreshBtn" title="Apply settings & refresh wireframe">Refresh Wireframe</button>
     <button id="resetBtn" title="Reset settings to default">Reset to Defaults</button>
     <button id="randomizeBtn" title="Randomize all settings">Randomize Settings</button>
-    <button id="downloadBtn" title="Generate 5-minute WebM video">Generate 5-min Video (WebM)</button>
   </aside>
 
   <main id="canvas-container" role="main" tabindex="0" aria-label="Wireframe 3D canvas"></main>
