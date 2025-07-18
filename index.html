@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div id="sidebar" aria-label="Settings menu">
+  <aside id="sidebar" aria-label="Settings menu">
     <h2>Wireframe Settings</h2>
 
     <label for="pointsSize">Points Size
@@ -60,10 +60,10 @@
     <button id="refreshBtn" title="Apply settings & refresh wireframe">Refresh Wireframe</button>
     <button id="resetBtn" title="Reset settings to default">Reset to Defaults</button>
     <button id="randomizeBtn" title="Randomize all settings">Randomize Settings</button>
+    <button id="downloadBtn" title="Generate 5-minute WebM video">Generate 5-min Video (WebM)</button>
+  </aside>
 
-  </div>
-
-  <div id="canvas-container"></div>
+  <main id="canvas-container" role="main" tabindex="0" aria-label="Wireframe 3D canvas"></main>
 
   <div id="info">Press <b>M</b> to toggle sidebar</div>
 
