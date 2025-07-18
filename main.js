@@ -96,15 +96,10 @@
   // Sidebar toggle on 'M'
   window.addEventListener('keydown', e => {
     if (e.key.toLowerCase() === 'm') {
-      if (sidebar.style.display === 'none' || !sidebar.style.display) {
-        sidebar.style.display = 'flex';
-        info.style.display = 'none';
-      } else {
-        sidebar.style.display = 'none';
-        info.style.display = 'block';
-      }
+      sidebar.classList.toggle('hidden');
     }
   });
+
 
   // THREE.js setup
   let scene, camera, renderer;
