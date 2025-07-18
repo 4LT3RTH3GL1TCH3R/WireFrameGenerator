@@ -1,355 +1,325 @@
-(() => {
-  // Grab DOM elements
-  const sidebar = document.getElementById('sidebar');
-  const info = document.getElementById('info');
-  const canvasContainer = document.getElementById('canvas-container');
+// == Variables & DOM refs ==
+const sidebar = document.getElementById('sidebar');
+const info = document.getElementById('info');
+const canvasContainer = document.getElementById('canvas-container');
+const shapesList = document.getElementById('shapes-list');
 
-  const inputs = {
-    pointsSize: document.getElementById('pointsSize'),
-    pointsSizeNum: document.getElementById('pointsSizeNum'),
+// Controls and synced inputs
+const controls = {
+  pointsSize: document.getElementById('pointsSize'),
+  pointsSizeNum: document.getElementById('pointsSizeNum'),
+  lineWidth: document.getElementById('lineWidth'),
+  lineWidthNum: document.getElementById('lineWidthNum'),
+  ugliness: document.getElementById('ugliness'),
+  uglinessNum: document.getElementById('uglinessNum'),
+  modelSize: document.getElementById('modelSize'),
+  modelSizeNum: document.getElementById('modelSizeNum'),
+  vertexCount: document.getElementById('vertexCount'),
+  vertexCountNum: document.getElementById('vertexCountNum'),
+  rotationSpeed: document.getElementById('rotationSpeed'),
+  rotationSpeedNum: document.getElementById('rotationSpeedNum'),
+  rotationAxisX: document.getElementById('rotationAxisX'),
+  rotationAxisXNum: document.getElementById('rotationAxisXNum'),
+  rotationAxisY: document.getElementById('rotationAxisY'),
+  rotationAxisYNum: document.getElementById('rotationAxisYNum'),
+  rotationAxisZ: document.getElementById('rotationAxisZ'),
+  rotationAxisZNum: document.getElementById('rotationAxisZNum'),
+  pointsOnly: document.getElementById('pointsOnly'),
+  bgColor: document.getElementById('bgColor'),
+  wfColor: document.getElementById('wfColor'),
 
-    lineWidth: document.getElementById('lineWidth'),
-    lineWidthNum: document.getElementById('lineWidthNum'),
+  refreshBtn: document.getElementById('refreshBtn'),
+  resetBtn: document.getElementById('resetBtn'),
+  randomizeBtn: document.getElementById('randomizeBtn')
+};
 
-    ugliness: document.getElementById('ugliness'),
-    uglinessNum: document.getElementById('uglinessNum'),
+// === THREE.js Setup ===
+let scene, camera, renderer, wireframe, points;
+let rotationAxis = new THREE.Vector3(0.5, 0.5, 0.5);
+let rotationSpeed = 0.025;
 
-    modelSize: document.getElementById('modelSize'),
-    modelSizeNum: document.getElementById('modelSizeNum'),
+init();
+animate();
 
-    vertexCount: document.getElementById('vertexCount'),
-    vertexCountNum: document.getElementById('vertexCountNum'),
+// === Shape presets ===
+const shapePresets = {
+  Cube: new THREE.BoxGeometry(1, 1, 1),
+  Tetrahedron: new THREE.TetrahedronGeometry(1),
+  Octahedron: new THREE.OctahedronGeometry(1),
+  Dodecahedron: new THREE.DodecahedronGeometry(1),
+  Icosahedron: new THREE.IcosahedronGeometry(1),
+  Sphere: new THREE.SphereGeometry(1, 32, 32),
+  Torus: new THREE.TorusGeometry(0.6, 0.2, 16, 100),
+  Cone: new THREE.ConeGeometry(0.8, 1.2, 16),
+  Cylinder: new THREE.CylinderGeometry(0.7, 0.7, 1.5, 16),
+  Plane: new THREE.PlaneGeometry(1, 1, 10, 10),
+  Circle: new THREE.CircleGeometry(1, 32)
+};
 
-    rotationSpeed: document.getElementById('rotationSpeed'),
-    rotationSpeedNum: document.getElementById('rotationSpeedNum'),
+let currentGeometry = shapePresets.Cube;
+let currentShapeName = 'Cube';
 
-    pointsOnly: document.getElementById('pointsOnly'),
+// === Init Three and UI ===
+function init() {
+  scene = new THREE.Scene();
 
-    bgColor: document.getElementById('bgColor'),
-    wfColor: document.getElementById('wfColor'),
+  camera = new THREE.PerspectiveCamera(75, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 1000);
+  camera.position.z = 3;
 
-    refreshBtn: document.getElementById('refreshBtn'),
-    resetBtn: document.getElementById('resetBtn'),
-    randomizeBtn: document.getElementById('randomizeBtn'),
-    downloadBtn: document.getElementById('downloadBtn'),
-  };
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+  canvasContainer.appendChild(renderer.domElement);
 
-  const shapesList = document.getElementById('shapes-list');
+  setupWireframe();
 
-  // Shapes from UI script (must match)
-  const shapes = ['Box', 'Sphere', 'Tetrahedron', 'Octahedron', 'Dodecahedron', 'Icosahedron'];
-
-  let selectedShapeIndex = -1; // default random
-
-  // Sync slider and number inputs
-  function syncSliderNumber(slider, number) {
-    slider.addEventListener('input', () => {
-      number.value = slider.value;
-    });
-    number.addEventListener('change', () => {
-      let val = parseFloat(number.value);
-      if (isNaN(val)) val = slider.min;
-      val = Math.min(slider.max, Math.max(slider.min, val));
-      number.value = val;
-      slider.value = val;
-      slider.dispatchEvent(new Event('input'));
-    });
+  // Populate shapes list UI
+  for (const name in shapePresets) {
+    const btn = document.createElement('button');
+    btn.textContent = name;
+    btn.onclick = () => {
+      currentShapeName = name;
+      currentGeometry = shapePresets[name];
+      markSelectedShape(name);
+      refreshWireframe();
+    };
+    shapesList.appendChild(btn);
   }
+  markSelectedShape(currentShapeName);
 
-  syncSliderNumber(inputs.pointsSize, inputs.pointsSizeNum);
-  syncSliderNumber(inputs.lineWidth, inputs.lineWidthNum);
-  syncSliderNumber(inputs.ugliness, inputs.uglinessNum);
-  syncSliderNumber(inputs.modelSize, inputs.modelSizeNum);
-  syncSliderNumber(inputs.vertexCount, inputs.vertexCountNum);
-  syncSliderNumber(inputs.rotationSpeed, inputs.rotationSpeedNum);
+  // Sync sliders and number inputs
+  Object.keys(controls).forEach(key => {
+    if (controls[key] && controls[key].tagName === 'INPUT' && (controls[key].type === 'range' || controls[key].type === 'number')) {
+      const pairedKey = key.endsWith('Num') ? key.slice(0, -3) : key + 'Num';
+      if (controls[pairedKey]) {
+        controls[key].addEventListener('input', () => {
+          controls[pairedKey].value = controls[key].value;
+          if (key.startsWith('rotationAxis') || key === 'rotationSpeed') updateRotationAxisAndSpeed();
+        });
+      }
+    }
+  });
 
-  // Build shapes buttons with selection
-  function buildShapesList() {
-    shapesList.innerHTML = '';
+  // Checkbox listener
+  controls.pointsOnly.addEventListener('change', refreshWireframe);
 
-    // Random shape button
-    const randomBtn = document.createElement('button');
-    randomBtn.textContent = 'Random Shape';
-    randomBtn.classList.toggle('selected', selectedShapeIndex === -1);
-    randomBtn.addEventListener('click', () => {
-      selectedShapeIndex = -1;
-      buildShapesList();
-      generateWireframe();
-    });
-    shapesList.appendChild(randomBtn);
+  // Color pickers listener
+  controls.bgColor.addEventListener('input', () => {
+    renderer.setClearColor(controls.bgColor.value);
+  });
+  controls.wfColor.addEventListener('input', refreshWireframe);
 
-    shapes.forEach((shape, i) => {
-      const btn = document.createElement('button');
-      btn.textContent = shape;
-      btn.classList.toggle('selected', selectedShapeIndex === i);
-      btn.addEventListener('click', () => {
-        selectedShapeIndex = i;
-        buildShapesList();
-        generateWireframe();
-      });
-      shapesList.appendChild(btn);
-    });
-  }
+  // Buttons listeners
+  controls.refreshBtn.addEventListener('click', refreshWireframe);
+  controls.resetBtn.addEventListener('click', resetSettings);
+  controls.randomizeBtn.addEventListener('click', randomizeSettings);
 
-  buildShapesList();
-
-  // Sidebar toggle on 'M'
+  // Keyboard toggle sidebar
   window.addEventListener('keydown', e => {
     if (e.key.toLowerCase() === 'm') {
       sidebar.classList.toggle('hidden');
     }
   });
 
+  window.addEventListener('resize', onWindowResize);
 
-  // THREE.js setup
-  let scene, camera, renderer;
-  let wireframeGroup;
-  let rotationAxis;
-  let rotationSpeed = 0.02;
+  // Initialize colors
+  renderer.setClearColor(controls.bgColor.value);
+}
 
-  function initThree() {
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 5;
-
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-    renderer.setSize(window.innerWidth - 340, window.innerHeight);
-    renderer.setClearColor(inputs.bgColor.value);
-    canvasContainer.innerHTML = '';
-    canvasContainer.appendChild(renderer.domElement);
-
-    wireframeGroup = new THREE.Group();
-    scene.add(wireframeGroup);
-
-    rotationAxis = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
-
-    window.addEventListener('resize', onWindowResize);
+// === Wireframe setup ===
+function setupWireframe() {
+  if (wireframe) {
+    scene.remove(wireframe);
+    wireframe.geometry.dispose();
+    wireframe.material.dispose();
+    wireframe = null;
+  }
+  if (points) {
+    scene.remove(points);
+    points.geometry.dispose();
+    points.material.dispose();
+    points = null;
   }
 
-  function onWindowResize() {
-    camera.aspect = (window.innerWidth - 340) / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth - 340, window.innerHeight);
+  // Prepare geometry based on vertexCount percentage
+  const vertexPercent = parseInt(controls.vertexCount.value) / 100;
+  const geom = simplifyGeometry(currentGeometry, vertexPercent);
+
+  // Add ugliness noise
+  const ugliness = parseFloat(controls.ugliness.value);
+  if (ugliness > 0) {
+    geom.vertices.forEach(v => {
+      v.x += (Math.random() * 2 - 1) * ugliness;
+      v.y += (Math.random() * 2 - 1) * ugliness;
+      v.z += (Math.random() * 2 - 1) * ugliness;
+    });
   }
 
-  // Create geometry based on shape name and vertex count detail
-  function createGeometry(shapeName, detailPercent) {
-    const detail = Math.floor((detailPercent / 100) * 5); // detail 0-5 for sphere, etc.
+  // Scale geometry
+  const size = parseFloat(controls.modelSize.value);
+  geom.scale(size, size, size);
 
-    switch(shapeName) {
-      case 'Box':
-        return new THREE.BoxGeometry(1,1,1, detail+1, detail+1, detail+1);
-      case 'Sphere':
-        return new THREE.IcosahedronGeometry(1, detail);
-      case 'Tetrahedron':
-        return new THREE.TetrahedronGeometry(1, detail);
-      case 'Octahedron':
-        return new THREE.OctahedronGeometry(1, detail);
-      case 'Dodecahedron':
-        return new THREE.DodecahedronGeometry(1, detail);
-      case 'Icosahedron':
-        return new THREE.IcosahedronGeometry(1, detail);
-      default:
-        // fallback box
-        return new THREE.BoxGeometry(1,1,1, 1,1,1);
-    }
+  geom.computeBoundingSphere();
+  geom.computeFaceNormals();
+
+  if (controls.pointsOnly.checked) {
+    const pointsMaterial = new THREE.PointsMaterial({
+      color: controls.wfColor.value,
+      size: parseFloat(controls.pointsSize.value),
+      sizeAttenuation: true
+    });
+    points = new THREE.Points(geom, pointsMaterial);
+    scene.add(points);
+  } else {
+    const edges = new THREE.EdgesGeometry(geom);
+    const lineMaterial = new THREE.LineBasicMaterial({
+      color: controls.wfColor.value,
+      linewidth: parseFloat(controls.lineWidth.value)
+    });
+    wireframe = new THREE.LineSegments(edges, lineMaterial);
+    scene.add(wireframe);
   }
+}
 
-  // Apply ugliness: randomly displace vertices by up to ugliness amount
-  function applyUgliness(geometry, ugliness) {
-    const pos = geometry.attributes.position;
-    for (let i=0; i<pos.count; i++) {
-      const offsetX = (Math.random() - 0.5) * ugliness * 2;
-      const offsetY = (Math.random() - 0.5) * ugliness * 2;
-      const offsetZ = (Math.random() - 0.5) * ugliness * 2;
-      pos.setXYZ(
-        i,
-        pos.getX(i) + offsetX,
-        pos.getY(i) + offsetY,
-        pos.getZ(i) + offsetZ
-      );
-    }
-    pos.needsUpdate = true;
-    geometry.computeVertexNormals();
+// === Simplify geometry (reduce vertex count) ===
+function simplifyGeometry(geometry, vertexPercent) {
+  // This is a hack since THREE.Geometry is deprecated
+  // Convert BufferGeometry to Geometry for easier manipulation
+  let geom = geometry.isBufferGeometry ? new THREE.Geometry().fromBufferGeometry(geometry) : geometry.clone();
+
+  const totalVertices = geom.vertices.length;
+  const targetCount = Math.floor(totalVertices * vertexPercent);
+
+  if (targetCount >= totalVertices) return geom;
+
+  // Remove vertices at random to reduce count
+  while (geom.vertices.length > targetCount) {
+    geom.vertices.splice(Math.floor(Math.random() * geom.vertices.length), 1);
   }
+  geom.verticesNeedUpdate = true;
 
-  // Create wireframe or points mesh from geometry
-  function createWireframeMesh(geometry, color, pointsSize, lineWidth, pointsOnly) {
-    if (pointsOnly) {
-      const material = new THREE.PointsMaterial({
-        color,
-        size: pointsSize,
-        sizeAttenuation: true,
-      });
-      return new THREE.Points(geometry, material);
-    } else {
-      const edges = new THREE.EdgesGeometry(geometry);
-      const material = new THREE.LineBasicMaterial({
-        color,
-        linewidth: lineWidth, // note: linewidth often ignored in most browsers
-      });
-      return new THREE.LineSegments(edges, material);
-    }
-  }
+  // Recompute faces and edges (very naive, will not be perfect)
+  geom.faces = [];
+  // Just a rough rebuild ignoring faces for now to avoid complexity
+  return geom;
+}
 
-  // Generate and display wireframe based on current settings
-  function generateWireframe() {
-    if (wireframeGroup) {
-      // Clean old
-      wireframeGroup.clear();
-      wireframeGroup.rotation.set(0,0,0);
-    }
+// === Update rotation vector and speed from inputs ===
+function updateRotationAxisAndSpeed() {
+  rotationAxis.set(
+    parseFloat(controls.rotationAxisX.value),
+    parseFloat(controls.rotationAxisY.value),
+    parseFloat(controls.rotationAxisZ.value)
+  );
+  rotationAxis.normalize();
+  rotationSpeed = parseFloat(controls.rotationSpeed.value);
+}
 
-    // Determine shape
-    let shapeName;
-    if (selectedShapeIndex === -1) {
-      shapeName = shapes[Math.floor(Math.random() * shapes.length)];
-    } else {
-      shapeName = shapes[selectedShapeIndex];
-    }
-
-    // Create geometry
-    let geom = createGeometry(shapeName, parseFloat(inputs.vertexCount.value));
-
-    // Apply ugliness noise
-    applyUgliness(geom, parseFloat(inputs.ugliness.value));
-
-    // Scale geometry (model size)
-    geom.scale(parseFloat(inputs.modelSize.value), parseFloat(inputs.modelSize.value), parseFloat(inputs.modelSize.value));
-
-    // Create mesh
-    const mesh = createWireframeMesh(
-      geom,
-      inputs.wfColor.value,
-      parseFloat(inputs.pointsSize.value),
-      parseFloat(inputs.lineWidth.value),
-      inputs.pointsOnly.checked
-    );
-
-    wireframeGroup.add(mesh);
-
-    // Randomize rotation axis
-    rotationAxis = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
-
-    // Update rotation speed
-    rotationSpeed = parseFloat(inputs.rotationSpeed.value);
-  }
-
-  // Animation loop
-  function animate() {
-    requestAnimationFrame(animate);
-
-    if (wireframeGroup) {
-      wireframeGroup.rotateOnAxis(rotationAxis, rotationSpeed);
-    }
-
-    renderer.render(scene, camera);
-  }
-
-  // Reset all inputs to default values
-  function resetSettings() {
-    inputs.pointsSize.value = 3;
-    inputs.pointsSizeNum.value = 3;
-
-    inputs.lineWidth.value = 1;
-    inputs.lineWidthNum.value = 1;
-
-    inputs.ugliness.value = 0;
-    inputs.uglinessNum.value = 0;
-
-    inputs.modelSize.value = 1;
-    inputs.modelSizeNum.value = 1;
-
-    inputs.vertexCount.value = 100;
-    inputs.vertexCountNum.value = 100;
-
-    inputs.rotationSpeed.value = 0.02;
-    inputs.rotationSpeedNum.value = 0.02;
-
-    inputs.pointsOnly.checked = false;
-
-    inputs.bgColor.value = '#121212';
-    inputs.wfColor.value = '#1de9b6';
-
-    applyColors();
-    generateWireframe();
-  }
-
-  // Randomize all settings in range
-  function randomizeSettings() {
-    function randRange(min, max, step = 0.01) {
-      const r = Math.random() * (max - min) + min;
-      return Math.round(r / step) * step;
-    }
-    inputs.pointsSize.value = randRange(0, 10, 1);
-    inputs.pointsSizeNum.value = inputs.pointsSize.value;
-
-    inputs.lineWidth.value = randRange(1, 10, 1);
-    inputs.lineWidthNum.value = inputs.lineWidth.value;
-
-    inputs.ugliness.value = randRange(0, 0.5, 0.01);
-    inputs.uglinessNum.value = inputs.ugliness.value;
-
-    inputs.modelSize.value = randRange(0.5, 3, 0.1);
-    inputs.modelSizeNum.value = inputs.modelSize.value;
-
-    inputs.vertexCount.value = randRange(10, 100, 5);
-    inputs.vertexCountNum.value = inputs.vertexCount.value;
-
-    inputs.rotationSpeed.value = randRange(0, 0.1, 0.001);
-    inputs.rotationSpeedNum.value = inputs.rotationSpeed.value;
-
-    inputs.pointsOnly.checked = Math.random() > 0.5;
-
-    inputs.bgColor.value = `#${Math.floor(Math.random()*0xffffff).toString(16).padStart(6,'0')}`;
-    inputs.wfColor.value = `#${Math.floor(Math.random()*0xffffff).toString(16).padStart(6,'0')}`;
-
-    applyColors();
-    generateWireframe();
-  }
-
-  // Apply bg and wireframe colors dynamically
-  function applyColors() {
-    renderer.setClearColor(inputs.bgColor.value);
-  }
-
-  // Button event listeners
-  inputs.refreshBtn.addEventListener('click', () => {
-    applyColors();
-    generateWireframe();
+// === Mark selected shape button ===
+function markSelectedShape(name) {
+  [...shapesList.children].forEach(btn => {
+    btn.classList.toggle('selected', btn.textContent === name);
   });
+}
 
-  inputs.resetBtn.addEventListener('click', () => {
-    resetSettings();
-  });
+// === Refresh Wireframe ===
+function refreshWireframe() {
+  updateRotationAxisAndSpeed();
+  setupWireframe();
+}
 
-  inputs.randomizeBtn.addEventListener('click', () => {
-    randomizeSettings();
-  });
+// === Reset all settings to default ===
+function resetSettings() {
+  controls.pointsSize.value = 3;
+  controls.pointsSizeNum.value = 3;
+  controls.lineWidth.value = 1;
+  controls.lineWidthNum.value = 1;
+  controls.ugliness.value = 0;
+  controls.uglinessNum.value = 0;
+  controls.modelSize.value = 1;
+  controls.modelSizeNum.value = 1;
+  controls.vertexCount.value = 100;
+  controls.vertexCountNum.value = 100;
+  controls.rotationSpeed.value = 0.025;
+  controls.rotationSpeedNum.value = 0.025;
+  controls.rotationAxisX.value = 0.5;
+  controls.rotationAxisXNum.value = 0.5;
+  controls.rotationAxisY.value = 0.5;
+  controls.rotationAxisYNum.value = 0.5;
+  controls.rotationAxisZ.value = 0.5;
+  controls.rotationAxisZNum.value = 0.5;
+  controls.pointsOnly.checked = false;
+  controls.bgColor.value = '#121212';
+  controls.wfColor.value = '#1de9b6';
 
-  // Download button is placeholder for now
-  inputs.downloadBtn.addEventListener('click', () => {
-    alert('Video generation not implemented yet.');
-  });
+  renderer.setClearColor(controls.bgColor.value);
+  markSelectedShape('Cube');
+  currentShapeName = 'Cube';
+  currentGeometry = shapePresets.Cube;
 
-  // Listen to color changes live
-  inputs.bgColor.addEventListener('input', () => {
-    applyColors();
-  });
+  refreshWireframe();
+}
 
-  inputs.wfColor.addEventListener('input', () => {
-    generateWireframe();
-  });
+// === Randomize all settings ===
+function randomizeSettings() {
+  const randRange = (min, max, step=0.01) => {
+    const range = max - min;
+    const steps = Math.floor(range / step);
+    const val = min + Math.floor(Math.random() * (steps + 1)) * step;
+    return parseFloat(val.toFixed(3));
+  };
 
-  // Initialize everything
-  function init() {
-    sidebar.style.display = 'flex';
-    info.style.display = 'none';
+  controls.pointsSize.value = randRange(0, 10, 0.5);
+  controls.pointsSizeNum.value = controls.pointsSize.value;
 
-    initThree();
-    resetSettings();
-    animate();
-  }
+  controls.lineWidth.value = randRange(1, 10, 0.5);
+  controls.lineWidthNum.value = controls.lineWidth.value;
 
-  init();
-})();
+  controls.ugliness.value = randRange(0, 0.7, 0.01);
+  controls.uglinessNum.value = controls.ugliness.value;
+
+  controls.modelSize.value = randRange(0.3, 4, 0.1);
+  controls.modelSizeNum.value = controls.modelSize.value;
+
+  controls.vertexCount.value = Math.floor(randRange(10, 100, 5));
+  controls.vertexCountNum.value = controls.vertexCount.value;
+
+  controls.rotationSpeed.value = randRange(0, 0.12, 0.001);
+  controls.rotationSpeedNum.value = controls.rotationSpeed.value;
+
+  controls.rotationAxisX.value = randRange(-1, 1, 0.01);
+  controls.rotationAxisXNum.value = controls.rotationAxisX.value;
+
+  controls.rotationAxisY.value = randRange(-1, 1, 0.01);
+  controls.rotationAxisYNum.value = controls.rotationAxisY.value;
+
+  controls.rotationAxisZ.value = randRange(-1, 1, 0.01);
+  controls.rotationAxisZNum.value = controls.rotationAxisZ.value;
+
+  controls.pointsOnly.checked = Math.random() < 0.5;
+
+  controls.bgColor.value = '#'+Math.floor(Math.random()*16777215).toString(16).padStart(6,'0');
+  controls.wfColor.value = '#'+Math.floor(Math.random()*16777215).toString(16).padStart(6,'0');
+
+  renderer.setClearColor(controls.bgColor.value);
+
+  refreshWireframe();
+}
+
+// === Handle window resizing ===
+function onWindowResize() {
+  camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+}
+
+// === Animation Loop ===
+function animate() {
+  requestAnimationFrame(animate);
+  const rotSpeed = rotationSpeed;
+
+  if (wireframe) wireframe.rotateOnAxis(rotationAxis, rotSpeed);
+  if (points) points.rotateOnAxis(rotationAxis, rotSpeed);
+
+  renderer.render(scene, camera);
+}
