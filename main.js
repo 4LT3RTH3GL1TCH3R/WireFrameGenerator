@@ -3,6 +3,8 @@ const sidebar = document.getElementById('sidebar');
 const info = document.getElementById('info');
 const canvasContainer = document.getElementById('canvas-container');
 const shapesList = document.getElementById('shapes-list');
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+
 
 // Controls and synced inputs
 const controls = {
@@ -141,27 +143,25 @@ function setupWireframe() {
     points = null;
   }
 
-  // Prepare geometry based on vertexCount percentage
-  const vertexPercent = parseInt(controls.vertexCount.value) / 100;
-  const geom = simplifyGeometry(currentGeometry, vertexPercent);
-
-  // Add ugliness noise
-  const ugliness = parseFloat(controls.ugliness.value);
-  if (ugliness > 0) {
-    geom.vertices.forEach(v => {
-      v.x += (Math.random() * 2 - 1) * ugliness;
-      v.y += (Math.random() * 2 - 1) * ugliness;
-      v.z += (Math.random() * 2 - 1) * ugliness;
-    });
-  }
+  let geom = currentGeometry.clone();
 
   // Scale geometry
   const size = parseFloat(controls.modelSize.value);
   geom.scale(size, size, size);
 
-  geom.computeBoundingSphere();
-  geom.computeFaceNormals();
+  // Ugliness (noise) - add to position attribute directly
+  const ugliness = parseFloat(controls.ugliness.value);
+  if (ugliness > 0 && geom.attributes.position) {
+    const pos = geom.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      pos.setX(i, pos.getX(i) + (Math.random() * 2 - 1) * ugliness);
+      pos.setY(i, pos.getY(i) + (Math.random() * 2 - 1) * ugliness);
+      pos.setZ(i, pos.getZ(i) + (Math.random() * 2 - 1) * ugliness);
+    }
+    pos.needsUpdate = true;
+  }
 
+  // Points only or wireframe
   if (controls.pointsOnly.checked) {
     const pointsMaterial = new THREE.PointsMaterial({
       color: controls.wfColor.value,
@@ -180,6 +180,7 @@ function setupWireframe() {
     scene.add(wireframe);
   }
 }
+
 
 // === Simplify geometry (reduce vertex count) ===
 function simplifyGeometry(geometry, vertexPercent) {
