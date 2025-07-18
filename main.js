@@ -185,23 +185,15 @@ function setupWireframe() {
 function simplifyGeometry(geometry, vertexPercent) {
   // This is a hack since THREE.Geometry is deprecated
   // Convert BufferGeometry to Geometry for easier manipulation
-  let geom = geometry.isBufferGeometry ? new THREE.Geometry().fromBufferGeometry(geometry) : geometry.clone();
+  // Use cloned BufferGeometry directly; skip vertex removal for now (fix later)
+  let geom = geometry.clone();
 
-  const totalVertices = geom.vertices.length;
-  const targetCount = Math.floor(totalVertices * vertexPercent);
+  // Scale geometry
+  const size = parseFloat(controls.modelSize.value);
+  geom.scale(size, size, size);
 
-  if (targetCount >= totalVertices) return geom;
-
-  // Remove vertices at random to reduce count
-  while (geom.vertices.length > targetCount) {
-    geom.vertices.splice(Math.floor(Math.random() * geom.vertices.length), 1);
-  }
-  geom.verticesNeedUpdate = true;
-
-  // Recompute faces and edges (very naive, will not be perfect)
-  geom.faces = [];
-  // Just a rough rebuild ignoring faces for now to avoid complexity
   return geom;
+
 }
 
 // === Update rotation vector and speed from inputs ===
