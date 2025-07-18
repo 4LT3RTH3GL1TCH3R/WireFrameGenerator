@@ -1,71 +1,276 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Random Wireframe Rotator</title>
-<style>
-  body, html {
-    margin: 0; padding: 0; overflow: hidden; background: #111;
-    display: flex; justify-content: center; align-items: center; height: 100vh;
-  }
-  canvas { display: block; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🔥 Advanced Wireframe Generator</title>
+  <style>
+    /* === RESET & BASE === */
+    * {
+      box-sizing: border-box;
+      user-select:none;
+    }
+    body, html {
+      margin: 0; padding: 0; overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #121212;
+      color: #ddd;
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* === CANVAS === */
+    #canvas-container {
+      flex-grow: 1;
+      position: relative;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background-color: transparent;
+    }
+
+    /* === SIDEBAR UI === */
+    #sidebar {
+      width: 340px;
+      background: #1e1e1e;
+      padding: 20px;
+      box-shadow: inset -3px 0 10px rgba(0,0,0,0.8);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      font-size: 14px;
+    }
+    #sidebar h2 {
+      margin: 0 0 20px 0;
+      font-weight: 700;
+      color: #1de9b6;
+      user-select:none;
+    }
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-weight: 600;
+      user-select:none;
+    }
+    input[type="range"] {
+      width: 100%;
+      cursor: pointer;
+      -webkit-appearance: none;
+      height: 8px;
+      border-radius: 4px;
+      background: #333;
+      margin-bottom: 16px;
+      outline: none;
+      transition: background 0.2s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      background: #1de9b6;
+      cursor: pointer;
+      border-radius: 50%;
+      border: none;
+      box-shadow: 0 0 5px #1de9b6;
+      transition: background 0.2s ease;
+      margin-top: -5px;
+    }
+    input[type="range"]:hover::-webkit-slider-thumb {
+      background: #13c69d;
+      box-shadow: 0 0 8px #13c69d;
+    }
+    input[type="number"] {
+      width: 70px;
+      margin-left: 10px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      border: 1px solid #333;
+      background: #222;
+      color: #ddd;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: right;
+      user-select: text;
+      transition: border-color 0.3s ease;
+    }
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #1de9b6;
+    }
+    button {
+      background: #1de9b6;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 16px;
+      margin: 8px 0 8px 0;
+      font-weight: 700;
+      cursor: pointer;
+      color: #121212;
+      box-shadow: 0 0 12px #1de9b6aa;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+      user-select:none;
+    }
+    button:hover {
+      background: #13c69d;
+      box-shadow: 0 0 20px #13c69daa;
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+      box-shadow: none;
+    }
+    #shapes-list {
+      max-height: 140px;
+      overflow-y: auto;
+      margin-bottom: 16px;
+      border: 1px solid #333;
+      border-radius: 6px;
+      background: #111;
+      padding: 8px;
+    }
+    #shapes-list button {
+      background: #333;
+      color: #eee;
+      font-weight: 600;
+      padding: 6px 8px;
+      margin: 3px 3px 3px 0;
+      border-radius: 4px;
+      box-shadow: none;
+    }
+    #shapes-list button.selected {
+      background: #1de9b6;
+      color: #121212;
+      box-shadow: 0 0 10px #1de9b6;
+      cursor: default;
+    }
+    #colorPickers {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    #colorPickers label {
+      flex-grow: 1;
+      font-weight: 700;
+    }
+    #colorPickers input[type=color] {
+      width: 100%;
+      height: 32px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      padding: 0;
+      margin-top: 4px;
+      transition: box-shadow 0.3s ease;
+    }
+    #colorPickers input[type=color]:hover {
+      box-shadow: 0 0 8px #1de9b6aa;
+    }
+
+    /* Scrollbar */
+    #sidebar::-webkit-scrollbar {
+      width: 8px;
+    }
+    #sidebar::-webkit-scrollbar-track {
+      background: #121212;
+    }
+    #sidebar::-webkit-scrollbar-thumb {
+      background: #1de9b6;
+      border-radius: 4px;
+    }
+
+    /* INFO text bottom-left */
+    #info {
+      position: fixed;
+      bottom: 10px; left: 10px;
+      font-family: monospace;
+      font-size: 13px;
+      color: #888;
+      user-select:none;
+      background: rgba(0,0,0,0.3);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    /* Responsive on very small screens */
+    @media (max-width: 400px) {
+      #sidebar {
+        width: 100vw;
+        height: 320px;
+        position: absolute;
+        bottom: 0;
+        box-shadow: none;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div id="sidebar" aria-label="Settings menu">
+    <h2>Wireframe Settings</h2>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
-<script>
-(() => {
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
-  camera.position.z = 5;
+    <label for="pointsSize">Points Size
+      <input type="range" id="pointsSize" min="0" max="10" step="1" value="3" />
+      <input type="number" id="pointsSizeNum" min="0" max="10" step="1" value="3" />
+    </label>
 
-  const renderer = new THREE.WebGLRenderer({antialias:true});
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
+    <label for="lineWidth">Line Width
+      <input type="range" id="lineWidth" min="1" max="10" step="1" value="1" />
+      <input type="number" id="lineWidthNum" min="1" max="10" step="1" value="1" />
+    </label>
 
-  // Wireframe material - greenish
-  const material = new THREE.MeshBasicMaterial({color: 0x00ff00, wireframe: true});
+    <label for="ugliness">Ugliness (vertex noise)
+      <input type="range" id="ugliness" min="0" max="0.5" step="0.01" value="0" />
+      <input type="number" id="uglinessNum" min="0" max="0.5" step="0.01" value="0" />
+    </label>
 
-  // Available geometries
-  const geometries = [
-    new THREE.BoxGeometry(1,1,1),
-    new THREE.SphereGeometry(0.8, 16, 16),
-    new THREE.TetrahedronGeometry(1),
-    new THREE.OctahedronGeometry(1),
-    new THREE.DodecahedronGeometry(1),
-    new THREE.IcosahedronGeometry(1),
-  ];
+    <label for="modelSize">Model Size (scale)
+      <input type="range" id="modelSize" min="0.5" max="3" step="0.1" value="1" />
+      <input type="number" id="modelSizeNum" min="0.5" max="3" step="0.1" value="1" />
+    </label>
 
-  // Pick random geometry
-  const geometry = geometries[Math.floor(Math.random() * geometries.length)];
-  const mesh = new THREE.Mesh(geometry, material);
-  scene.add(mesh);
+    <label for="vertexCount">Vertex Count (% detail)
+      <input type="range" id="vertexCount" min="10" max="100" step="5" value="100" />
+      <input type="number" id="vertexCountNum" min="10" max="100" step="5" value="100" />
+    </label>
 
-  // Random rotation axis & speed (-0.02 to 0.02 rad/frame)
-  const rotSpeed = {
-    x: (Math.random() * 0.04 - 0.02),
-    y: (Math.random() * 0.04 - 0.02),
-    z: (Math.random() * 0.04 - 0.02)
-  };
+    <label for="rotationSpeed">Rotation Speed
+      <input type="range" id="rotationSpeed" min="0" max="0.1" step="0.001" value="0.02" />
+      <input type="number" id="rotationSpeedNum" min="0" max="0.1" step="0.001" value="0.02" />
+    </label>
 
-  function animate() {
-    requestAnimationFrame(animate);
-    mesh.rotation.x += rotSpeed.x;
-    mesh.rotation.y += rotSpeed.y;
-    mesh.rotation.z += rotSpeed.z;
-    renderer.render(scene, camera);
-  }
-  animate();
+    <label>
+      <input type="checkbox" id="pointsOnly" />
+      Points Only (no lines)
+    </label>
 
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth/window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-})();
-</script>
+    <div id="colorPickers">
+      <label for="bgColor">Background Color
+        <input type="color" id="bgColor" value="#121212" />
+      </label>
+      <label for="wfColor">Wireframe Color
+        <input type="color" id="wfColor" value="#1de9b6" />
+      </label>
+    </div>
 
+    <h3>Shapes</h3>
+    <div id="shapes-list" aria-label="Available shapes"></div>
+
+    <button id="refreshBtn" title="Apply settings & refresh wireframe">Refresh Wireframe</button>
+    <button id="resetBtn" title="Reset settings to default">Reset to Defaults</button>
+    <button id="randomizeBtn" title="Randomize all settings">Randomize Settings</button>
+    <button id="downloadBtn" title="Generate 5-minute WebM video">Generate 5-min Video (WebM)</button>
+
+  </div>
+
+  <div id="canvas-container"></div>
+
+  <div id="info">Press <b>M</b> to toggle sidebar</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 </body>
 </html>
