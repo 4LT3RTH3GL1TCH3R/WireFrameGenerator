@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced 3D Wireframe Generator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Main Canvas Area -->
+        <div class="canvas-container">
+            <canvas id="wireframeCanvas" width="1200" height="800"></canvas>
+            <div class="controls-overlay">
+                <button id="toggleSidepanel" class="toggle-btn" title="Toggle Sidepanel (S)">☰</button>
+                <button id="generateRandom" class="control-btn" title="Generate Random">🎲</button>
+                <button id="clearCanvas" class="control-btn" title="Clear Canvas">🗑️</button>
+                <button id="fullscreen" class="control-btn" title="Fullscreen">⛶</button>
+            </div>
+        </div>
+
+        <!-- Sidepanel -->
+        <div id="sidepanel" class="sidepanel">
+            <div class="sidepanel-header">
+                <h2>3D Wireframe Generator</h2>
+                <button id="closeSidepanel" class="close-btn">×</button>
+            </div>
+            
+            <div class="sidepanel-content">
+                <!-- Generation Settings -->
+                <div class="section">
+                    <h3>Generation Settings</h3>
+                    <div class="form-group">
+                        <label for="pointCount">Number of Points:</label>
+                        <input type="range" id="pointCount" min="3" max="50" value="8">
+                        <span id="pointCountValue">8</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="connectionDensity">Connection Density:</label>
+                        <input type="range" id="connectionDensity" min="0.1" max="1" step="0.1" value="0.3">
+                        <span id="connectionDensityValue">0.3</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="canvasSize">Canvas Size:</label>
+                        <select id="canvasSize">
+                            <option value="800x600">800 × 600</option>
+                            <option value="1024x768">1024 × 768</option>
+                            <option value="1200x800" selected>1200 × 800</option>
+                            <option value="1920x1080">1920 × 1080</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                    
+                    <div id="customSizeInputs" class="form-group" style="display: none;">
+                        <input type="number" id="customWidth" placeholder="Width" min="400" max="3840" value="1200">
+                        <input type="number" id="customHeight" placeholder="Height" min="300" max="2160" value="800">
+                    </div>
+                </div>
+
+                <!-- Visual Settings -->
+                <div class="section">
+                    <h3>Visual Settings</h3>
+                    <div class="form-group">
+                        <label for="pointSize">Point Size:</label>
+                        <input type="range" id="pointSize" min="2" max="20" value="6">
+                        <span id="pointSizeValue">6</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="lineWidth">Line Width:</label>
+                        <input type="range" id="lineWidth" min="1" max="10" value="2">
+                        <span id="lineWidthValue">2</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="backgroundColor">Background Color:</label>
+                        <input type="color" id="backgroundColor" value="#1a1a2e">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="randomColors"> Random Colors
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="animateWireframe"> Animate Wireframe
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="randomRotation" checked> Random 3D Rotation
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="rotationSpeed">Rotation Speed:</label>
+                        <input type="range" id="rotationSpeed" min="0.001" max="0.05" step="0.001" value="0.01">
+                        <span id="rotationSpeedValue">0.01</span>
+                    </div>
+                </div>
+
+                <!-- 3D Camera Controls -->
+                <div class="section">
+                    <h3>3D Camera</h3>
+                    <div class="form-group">
+                        <label for="cameraDistance">Camera Distance:</label>
+                        <input type="range" id="cameraDistance" min="5" max="50" value="20">
+                        <span id="cameraDistanceValue">20</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="fieldOfView">Field of View:</label>
+                        <input type="range" id="fieldOfView" min="30" max="120" value="75">
+                        <span id="fieldOfViewValue">75</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button id="resetCamera" class="control-btn">Reset Camera</button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="autoRotate" checked> Auto Rotate Camera
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Presets -->
+                <div class="section">
+                    <h3>3D Presets</h3>
+                    <div class="preset-buttons">
+                        <button class="preset-btn" data-preset="cube">Cube</button>
+                        <button class="preset-btn" data-preset="tetrahedron">Tetrahedron</button>
+                        <button class="preset-btn" data-preset="octahedron">Octahedron</button>
+                        <button class="preset-btn" data-preset="dodecahedron">Dodecahedron</button>
+                        <button class="preset-btn" data-preset="icosahedron">Icosahedron</button>
+                        <button class="preset-btn" data-preset="pyramid">Pyramid</button>
+                        <button class="preset-btn" data-preset="sphere">Sphere</button>
+                        <button class="preset-btn" data-preset="torus">Torus</button>
+                        <button class="preset-btn" data-preset="helix">Helix</button>
+                        <button class="preset-btn" data-preset="double-helix">Double Helix</button>
+                        <button class="preset-btn" data-preset="grid3d">3D Grid</button>
+                        <button class="preset-btn" data-preset="knot">Trefoil Knot</button>
+                    </div>
+                </div>
+
+                <!-- Manual Editing -->
+                <div class="section">
+                    <h3>3D Manual Editing</h3>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="editMode"> Edit Mode (Drag Points)
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button id="addPoint" class="control-btn">Add Point</button>
+                        <button id="removePoint" class="control-btn">Remove Point</button>
+                        <button id="addFace" class="control-btn">Add Face</button>
+                        <button id="removeFace" class="control-btn">Remove Face</button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="selectedPoint">Selected Point:</label>
+                        <select id="selectedPoint">
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                    
+                    <div id="pointEditor" style="display: none;">
+                        <div class="form-group">
+                            <label for="pointX">X Position:</label>
+                            <input type="number" id="pointX" min="-10" max="10" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label for="pointY">Y Position:</label>
+                            <input type="number" id="pointY" min="-10" max="10" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label for="pointZ">Z Position:</label>
+                            <input type="number" id="pointZ" min="-10" max="10" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label for="pointColor">Point Color:</label>
+                            <input type="color" id="pointColor" value="#ff6b6b">
+                        </div>
+                        <div class="form-group">
+                            <label for="pointSize">Point Size:</label>
+                            <input type="range" id="individualPointSize" min="1" max="20" value="6">
+                            <span id="individualPointSizeValue">6</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="selectedFace">Selected Face:</label>
+                        <select id="selectedFace">
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                    
+                    <div id="faceEditor" style="display: none;">
+                        <div class="form-group">
+                            <label for="faceColor">Face Color:</label>
+                            <input type="color" id="faceColor" value="#4f46e5">
+                        </div>
+                        <div class="form-group">
+                            <label for="faceOpacity">Face Opacity:</label>
+                            <input type="range" id="faceOpacity" min="0" max="1" step="0.1" value="0.3">
+                            <span id="faceOpacityValue">0.3</span>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="showFaces" checked> Show Faces
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export/Import -->
+                <div class="section">
+                    <h3>Export/Import</h3>
+                    <div class="form-group">
+                        <button id="exportConfig" class="control-btn">Export Config</button>
+                        <button id="importConfig" class="control-btn">Import Config</button>
+                        <input type="file" id="importFile" accept=".json" style="display: none;">
+                    </div>
+                    
+                    <div class="form-group">
+                        <button id="exportImage" class="control-btn">Export as PNG</button>
+                        <button id="exportSVG" class="control-btn">Export as SVG</button>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="section">
+                    <h3>Statistics</h3>
+                    <div id="stats">
+                        <div>Points: <span id="statPoints">0</span></div>
+                        <div>Connections: <span id="statConnections">0</span></div>
+                        <div>Faces: <span id="statFaces">0</span></div>
+                        <div>Total Length: <span id="statLength">0</span>units</div>
+                        <div>Volume: <span id="statVolume">0</span>units³</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script3d.js"></script>
+</body>
+</html>
